@@ -58,7 +58,6 @@ export default class Cage extends Container {
       );
 
       bar.on("selected", (barNumber: number) => {
-      console.log("Cage receives:", barNumber);
       this.emit("selected", barNumber);
         });
       bar.scale.set(1.08);

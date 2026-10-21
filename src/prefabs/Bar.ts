@@ -82,7 +82,6 @@ export default class Bar extends Container {
 
     this.badge.on("pointertap", () => {
       if (this.canInteract) {
-        console.log("Badge clicked:", this.barNumber);
         this.emit("selected", this.barNumber);
       }
     });
