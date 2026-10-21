@@ -11,7 +11,7 @@ export default class StatusPanel extends Container {
 
     const textStyle = new TextStyle({
       fontFamily: ["Arial Black", "Arial", "sans-serif"],
-      fontSize: 34,
+      fontSize: 38,
       fontWeight: "bold",
       align: "center",
       fill: 0xfff4cf,
@@ -29,14 +29,14 @@ export default class StatusPanel extends Container {
     });
 
     const titleStyle = textStyle.clone();
-    titleStyle.fontSize = 42;
+    titleStyle.fontSize = 55;
 
     const title = new Text("FREE THE\nTIGER", titleStyle);
     title.anchor.set(0.5);
-    title.position.set(0, -150);
+    title.position.set(0, -175);
 
     const countStyle = textStyle.clone();
-    countStyle.fontSize = 150;
+    countStyle.fontSize = 240;
     countStyle.fill = [0xffed60, 0xffb526];
     countStyle.strokeThickness = 8;
     countStyle.dropShadowDistance = 9;
@@ -47,10 +47,10 @@ export default class StatusPanel extends Container {
 
     const caption = new Text("BARS LEFT", textStyle);
     caption.anchor.set(0.5);
-    caption.position.set(0, 110);
+    caption.position.set(0, 145);
 
     const instructionStyle = textStyle.clone();
-    instructionStyle.fontSize = 23;
+    instructionStyle.fontSize = 26;
     instructionStyle.strokeThickness = 4;
     instructionStyle.dropShadowDistance = 4;
 
@@ -60,7 +60,7 @@ export default class StatusPanel extends Container {
     );
 
     instruction.anchor.set(0.5);
-    instruction.position.set(0, 175);
+    instruction.position.set(0, 205);
 
     this.addChild(title, this.countText, caption, instruction);
     this.eventMode = "none";
