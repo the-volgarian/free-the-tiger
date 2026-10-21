@@ -8,12 +8,7 @@ import { shuffle } from "../utils/shuffle";
 import { delay } from "../utils/delay";
 
 type GameState =
-  | "loading"
-  | "ready"
-  | "animating"
-  | "resetting"
-  | "won"
-  | "error";
+  "loading" | "ready" | "animating" | "resetting" | "won" | "error";
 
 const TOTAL_BARS = 6;
 const WIN_DELAY_SECONDS = 5;
@@ -28,9 +23,7 @@ export default class Game extends Container {
   private readonly loader = new AssetLoader();
   private readonly fadeOverlay = new Graphics();
 
-  private readonly backgroundMusic = new Audio(
-    "/sounds/background.mp3",
-  );
+  private readonly backgroundMusic = new Audio("/sounds/background.mp3");
 
   private cage!: Cage;
   private tiger!: Tiger;
@@ -64,9 +57,7 @@ export default class Game extends Container {
 
   private createScene(): void {
     // Background.
-    const background = new Sprite(
-      this.loader.getTexture("background"),
-    );
+    const background = new Sprite(this.loader.getTexture("background"));
 
     const backgroundScale = Math.max(
       this.designWidth / background.texture.width,
@@ -76,10 +67,7 @@ export default class Game extends Container {
     background.anchor.set(0.5);
     background.scale.set(backgroundScale);
 
-    background.position.set(
-      this.designWidth / 2,
-      this.designHeight / 2,
-    );
+    background.position.set(this.designWidth / 2, this.designHeight / 2);
 
     background.eventMode = "none";
     this.addChild(background);
@@ -104,18 +92,13 @@ export default class Game extends Container {
     this.addChild(this.cage);
 
     // Tiger behind the locking bars.
-    this.tiger = new Tiger(
-      this.loader.getTexture("tiger"),
-      440,
-    );
+    this.tiger = new Tiger(this.loader.getTexture("tiger"), 440);
 
     this.tiger.position.set(0, 210);
     this.cage.addChildAt(this.tiger, 1);
 
     // Plate.
-    const plate = new Sprite(
-      this.loader.getTexture("plate"),
-    );
+    const plate = new Sprite(this.loader.getTexture("plate"));
 
     const plateWidth = 480;
 
@@ -134,12 +117,9 @@ export default class Game extends Container {
     this.addChild(this.panel);
 
     // Victory artwork.
-    this.victoryText = new Sprite(
-      this.loader.getTexture("txt"),
-    );
+    this.victoryText = new Sprite(this.loader.getTexture("txt"));
 
-    this.victoryScale =
-      VICTORY_WIDTH / this.victoryText.texture.width;
+    this.victoryScale = VICTORY_WIDTH / this.victoryText.texture.width;
 
     this.victoryText.anchor.set(0.5);
     this.victoryText.scale.set(this.victoryScale);
@@ -152,12 +132,7 @@ export default class Game extends Container {
     // Transition overlay above the scene.
     this.fadeOverlay.beginFill(0x000000);
 
-    this.fadeOverlay.drawRect(
-      0,
-      0,
-      this.designWidth,
-      this.designHeight,
-    );
+    this.fadeOverlay.drawRect(0, 0, this.designWidth, this.designHeight);
 
     this.fadeOverlay.endFill();
     this.fadeOverlay.alpha = 0;
@@ -181,15 +156,10 @@ export default class Game extends Container {
         return;
       }
 
-      if (
-        error instanceof DOMException &&
-        error.name === "NotAllowedError"
-      ) {
-        window.addEventListener(
-          "pointerdown",
-          this.startBackgroundMusic,
-          { once: true },
-        );
+      if (error instanceof DOMException && error.name === "NotAllowedError") {
+        window.addEventListener("pointerdown", this.startBackgroundMusic, {
+          once: true,
+        });
 
         return;
       }
@@ -227,9 +197,7 @@ export default class Game extends Container {
     this.cage.setInteractive(enableInput);
   }
 
-  private async handleSelection(
-    barNumber: number,
-  ): Promise<void> {
+  private async handleSelection(barNumber: number): Promise<void> {
     if (this.state !== "ready") {
       return;
     }
@@ -276,17 +244,11 @@ export default class Game extends Container {
     this.cage.setInteractive(false);
 
     // Bring the tiger in front of all cage elements.
-    this.cage.setChildIndex(
-      this.tiger,
-      this.cage.children.length - 1,
-    );
+    this.cage.setChildIndex(this.tiger, this.cage.children.length - 1);
 
     await this.tiger.escape();
 
-    await Promise.all([
-      this.showVictory(),
-      delay(WIN_DELAY_SECONDS),
-    ]);
+    await Promise.all([this.showVictory(), delay(WIN_DELAY_SECONDS)]);
 
     await this.restartScene();
   }
@@ -369,10 +331,7 @@ export default class Game extends Container {
 
     this.backgroundMusic.pause();
 
-    window.removeEventListener(
-      "pointerdown",
-      this.startBackgroundMusic,
-    );
+    window.removeEventListener("pointerdown", this.startBackgroundMusic);
 
     gsap.killTweensOf(this.fadeOverlay);
     this.fadeOverlay.visible = false;
@@ -398,10 +357,7 @@ export default class Game extends Container {
 
     message.anchor.set(0.5);
 
-    message.position.set(
-      this.designWidth / 2,
-      this.designHeight / 2,
-    );
+    message.position.set(this.designWidth / 2, this.designHeight / 2);
 
     message.eventMode = "none";
 

@@ -58,8 +58,8 @@ export default class Cage extends Container {
       );
 
       bar.on("selected", (barNumber: number) => {
-      this.emit("selected", barNumber);
-        });
+        this.emit("selected", barNumber);
+      });
       bar.scale.set(1.08);
       this.bars.push(bar);
       this.addChild(bar);
@@ -79,9 +79,7 @@ export default class Cage extends Container {
   }
 
   async closeAll(): Promise<void> {
-    await Promise.all(
-      this.bars.map((bar) => bar.close()),
-    );
+    await Promise.all(this.bars.map((bar) => bar.close()));
   }
 
   setInteractive(enabled: boolean): void {

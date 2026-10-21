@@ -54,10 +54,7 @@ export default class StatusPanel extends Container {
     instructionStyle.strokeThickness = 4;
     instructionStyle.dropShadowDistance = 4;
 
-    const instruction = new Text(
-      "Find the\nright order",
-      instructionStyle,
-    );
+    const instruction = new Text("Find the\nright order", instructionStyle);
 
     instruction.anchor.set(0.5);
     instruction.position.set(0, 205);

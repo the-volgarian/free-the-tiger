@@ -10,10 +10,9 @@ export default class AssetLoader {
 
         this.textures.set(name, texture);
       } catch (error) {
-        throw new Error(
-          `Failed to load image "${name}" from "${url}".`,
-          { cause: error },
-        );
+        throw new Error(`Failed to load image "${name}" from "${url}".`, {
+          cause: error,
+        });
       }
     }
   }
