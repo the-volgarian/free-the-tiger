@@ -1,4 +1,12 @@
-import { Assets, Container, Sprite, Text, Texture } from "pixi.js";
+import {
+  Assets,
+  Container,
+  Filter,
+  Graphics,
+  Sprite,
+  Text,
+  Texture,
+} from "pixi.js";
 import { gsap } from "gsap";
 
 export type BarDirection = "left" | "right";
@@ -7,21 +15,23 @@ const SHADOW_OFFSET_Y = 8;
 const HOVER_SCALE = 1.2;
 const OPEN_DURATION = 0.5;
 const CLOSE_DURATION = 0.2;
+const SHARPEN_STRENGTH = 0.4;
+const BADGE_RADIUS = 27;
 
 export default class Bar extends Container {
   readonly barNumber: number;
   readonly direction: BarDirection;
 
   private readonly visuals = new Container();
+  private readonly label = new Container();
+  private readonly badge = new Graphics();
   private readonly image: Sprite;
   private readonly shadow: Sprite;
-  private readonly label: Text;
   private readonly sound = new Audio("/sounds/barOpen.mp3");
 
   private opened = false;
   private animating = false;
   private inputEnabled = true;
-  private hingeX = 0;
 
   constructor(
     barNumber: number,
@@ -34,52 +44,47 @@ export default class Bar extends Container {
     this.barNumber = barNumber;
     this.direction = direction;
 
-    // Create the shadow.
     this.shadow = Sprite.from(shadowImageUrl);
     this.shadow.anchor.set(0.5);
     this.shadow.y = SHADOW_OFFSET_Y;
 
-    // Create the bar image.
     this.image = Sprite.from(imageUrl);
     this.image.anchor.set(0.5);
+
+    this.addSharpenFilter();
 
     if (direction === "right") {
       this.image.scale.x = -1;
       this.shadow.scale.x = -1;
     }
 
-    // Create the number.
-    this.label = new Text(String(barNumber), {
-      fontFamily: "Arial",
-      fontSize: 32,
-      fill: 0xffffff,
-      stroke: 0x000000,
-      strokeThickness: 3,
-    });
-
-    this.label.anchor.set(0.5);
+    this.createBadge();
 
     this.visuals.addChild(this.shadow, this.image);
     this.addChild(this.visuals, this.label);
 
-    // Enable interaction through the image.
-    this.interactiveChildren = true;
-    this.cursor = "pointer";
-    this.image.cursor = "pointer";
-    this.image.eventMode = "static";
-    this.shadow.eventMode = "none";
-    this.label.eventMode = "none";
+    // Only the drawn badge receives pointer input.
+    this.visuals.eventMode = "none";
+    this.label.eventMode = "passive";
+    this.label.interactiveChildren = true;
 
-    this.on("pointerover", () => {
-      this.label.scale.set(HOVER_SCALE);
+    this.badge.cursor = "pointer";
+
+    this.badge.on("pointerenter", () => {
+      if (this.canInteract) {
+        this.label.scale.set(HOVER_SCALE);
+      }
     });
 
-    this.on("pointerout", () => {
+    this.badge.on("pointerleave", () => {
       this.label.scale.set(1);
     });
 
-    this.on("pointertap", () => {
-      this.emit("selected", this.barNumber);
+    this.badge.on("pointertap", () => {
+      if (this.canInteract) {
+        console.log("Badge clicked:", this.barNumber);
+        this.emit("selected", this.barNumber);
+      }
     });
 
     this.updateInteraction();
@@ -89,20 +94,75 @@ export default class Bar extends Container {
     return this.opened;
   }
 
+  private get canInteract(): boolean {
+    return this.inputEnabled && !this.animating && !this.opened;
+  }
+
   setInteractive(enabled: boolean): void {
     this.inputEnabled = enabled;
     this.updateInteraction();
   }
 
   private updateInteraction(): void {
-    const enabled =
-      this.inputEnabled && !this.animating && !this.opened;
+    this.eventMode = this.canInteract ? "passive" : "none";
+    this.label.eventMode = this.canInteract ? "passive" : "none";
+    this.badge.eventMode = this.canInteract ? "static" : "none";
 
-    this.eventMode = enabled ? "static" : "none";
-
-    if (!enabled) {
+    if (!this.canInteract) {
       this.label.scale.set(1);
     }
+  }
+
+  private createBadge(): void {
+    const badge = this.badge;
+
+    // Shadow.
+    badge.beginFill(0x071b20, 0.65);
+    badge.drawCircle(0, 4, BADGE_RADIUS);
+    badge.endFill();
+
+    // Outer border.
+    badge.lineStyle(2, 0x071b20);
+    badge.beginFill(0xb77a32);
+    badge.drawCircle(0, 0, BADGE_RADIUS);
+    badge.endFill();
+
+    // Gold rim.
+    badge.lineStyle(2, 0xffedac);
+    badge.beginFill(0xe9b85b);
+    badge.drawCircle(0, -1, BADGE_RADIUS - 3);
+    badge.endFill();
+
+    // Dark center.
+    badge.lineStyle(2, 0x071b20);
+    badge.beginFill(0x12434a);
+    badge.drawCircle(0, -1, BADGE_RADIUS - 7);
+    badge.endFill();
+
+    // Upper highlight.
+    badge.lineStyle(0);
+    badge.beginFill(0xffffff, 0.08);
+    badge.drawEllipse(0, -10, 14, 6);
+    badge.endFill();
+
+    const number = new Text(String(this.barNumber), {
+      fontFamily: ["Arial Black", "Arial", "sans-serif"],
+      fontSize: 32,
+      fontWeight: "bold",
+      fill: 0xfff4cf,
+      stroke: 0x071b20,
+      strokeThickness: 3,
+      dropShadow: true,
+      dropShadowColor: 0x000000,
+      dropShadowAlpha: 0.5,
+      dropShadowDistance: 2,
+      dropShadowAngle: Math.PI / 2,
+    });
+
+    number.anchor.set(0.5);
+    number.y = -1;
+
+    this.label.addChild(badge, number);
   }
 
   async open(): Promise<void> {
@@ -114,9 +174,6 @@ export default class Bar extends Container {
     this.updateInteraction();
 
     try {
-      this.sound.currentTime = 0;
-      void this.sound.play().catch(console.warn);
-
       const [imageTexture, shadowTexture] = await Promise.all([
         Assets.load<Texture>(this.imageUrl),
         Assets.load<Texture>(this.shadowImageUrl),
@@ -125,17 +182,11 @@ export default class Bar extends Container {
       this.image.texture = imageTexture;
       this.shadow.texture = shadowTexture;
 
-      // Place the hinge at the outer edge.
-      this.hingeX = imageTexture.width / 2;
-
-      if (this.direction === "left") {
-        this.hingeX = -this.hingeX;
-      }
-
-      this.visuals.pivot.x = this.hingeX;
-      this.visuals.x = this.hingeX;
+      this.sound.currentTime = 0;
+      void this.sound.play().catch(console.warn);
 
       await this.animate(true);
+
       this.opened = true;
     } finally {
       this.animating = false;
@@ -153,6 +204,7 @@ export default class Bar extends Container {
 
     try {
       await this.animate(false);
+
       this.opened = false;
     } finally {
       this.animating = false;
@@ -161,21 +213,60 @@ export default class Bar extends Container {
   }
 
   private async animate(opening: boolean): Promise<void> {
-    const timeline = gsap.timeline({
-      defaults: {
-        duration: opening ? OPEN_DURATION : CLOSE_DURATION,
-        ease: opening ? "power2.inOut" : "power2.in",
-      },
+    const direction = this.direction === "left" ? -1 : 1;
+    const distance = this.image.width;
+    const targetX = opening ? direction * distance : 0;
+
+    await gsap.to([this.visuals, this.label], {
+      x: targetX,
+      duration: opening ? OPEN_DURATION : CLOSE_DURATION,
+      ease: opening ? "power2.inOut" : "power2.in",
     });
+  }
 
-    timeline.to(this.visuals.scale, {
-      x: opening ? -1 : 1,
-    }, 0);
+  private addSharpenFilter(): void {
+    const sharpen = new Filter(
+      undefined,
+      `
+        varying vec2 vTextureCoord;
 
-    timeline.to(this.label, {
-      x: opening ? this.hingeX * 2 : 0,
-    }, 0);
+        uniform sampler2D uSampler;
+        uniform vec4 inputPixel;
+        uniform vec4 inputClamp;
+        uniform float strength;
 
-    await timeline;
+        vec4 sampleColor(vec2 position) {
+          return texture2D(
+            uSampler,
+            clamp(position, inputClamp.xy, inputClamp.zw)
+          );
+        }
+
+        void main() {
+          vec2 pixel = inputPixel.zw;
+          vec4 center = sampleColor(vTextureCoord);
+
+          vec3 neighbours =
+            sampleColor(vTextureCoord + vec2(pixel.x, 0.0)).rgb +
+            sampleColor(vTextureCoord - vec2(pixel.x, 0.0)).rgb +
+            sampleColor(vTextureCoord + vec2(0.0, pixel.y)).rgb +
+            sampleColor(vTextureCoord - vec2(0.0, pixel.y)).rgb;
+
+          vec3 color =
+            center.rgb * (1.0 + 4.0 * strength) -
+            neighbours * strength;
+
+          gl_FragColor = vec4(
+            clamp(color, vec3(0.0), vec3(center.a)),
+            center.a
+          );
+        }
+      `,
+      { strength: SHARPEN_STRENGTH },
+    );
+
+    sharpen.resolution = window.devicePixelRatio || 1;
+
+    this.image.filters = [sharpen];
   }
 }
