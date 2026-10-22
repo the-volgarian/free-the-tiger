@@ -1,4 +1,4 @@
-import { Container, Sprite } from "pixi.js";
+import { Container, Sprite, Texture } from "pixi.js";
 import Bar from "./Bar";
 
 const TOTAL_BARS = 6;
@@ -16,14 +16,14 @@ export default class Cage extends Container {
   private readonly bars: Bar[] = [];
 
   constructor(
-    cageImageUrl: string,
-    barImageUrl: string,
-    shadowImageUrl: string,
+    cageTexture: Texture,
+    barTexture: Texture,
+    shadowTexture: Texture,
     layout: CageLayout,
   ) {
     super();
 
-    const image = Sprite.from(cageImageUrl);
+    const image = new Sprite(cageTexture);
     image.anchor.set(0.5);
     image.eventMode = "none";
 

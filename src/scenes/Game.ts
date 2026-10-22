@@ -74,9 +74,9 @@ export default class Game extends Container {
 
     // Cage and locking bars.
     this.cage = new Cage(
-      "/images/cage.png",
-      "/images/bar.png",
-      "/images/barShadow.png",
+      this.loader.getTexture("cage"),
+      this.loader.getTexture("bar"),
+      this.loader.getTexture("barShadow"),
       {
         leftX: -150,
         rightX: 150,
@@ -84,7 +84,6 @@ export default class Game extends Container {
         rowSpacing: 100,
       },
     );
-
     this.cage.position.set(980, 560);
     this.cage.scale.set(1.35);
     this.cage.setInteractive(false);
