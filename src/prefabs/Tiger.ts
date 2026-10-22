@@ -17,6 +17,8 @@ export default class Tiger extends Container {
     super();
 
     this.image = new Sprite(texture);
+
+    // Keep the bottom center fixed during both animations.
     this.image.anchor.set(0.5, 1);
 
     this.initialScale = config.displayWidth / texture.width;
@@ -37,7 +39,8 @@ export default class Tiger extends Container {
       this.sound.currentTime = 0;
       void this.sound.play().catch(console.warn);
 
-      const targetScale = this.initialScale * this.config.escapeScale;
+      const targetScale =
+        this.initialScale * this.config.escapeScale;
 
       await gsap.to(this.image.scale, {
         x: targetScale,
@@ -47,6 +50,30 @@ export default class Tiger extends Container {
       });
 
       this.escaped = true;
+    } finally {
+      this.moving = false;
+    }
+  }
+
+  async returnToCage(): Promise<void> {
+    if (this.moving || !this.escaped) {
+      return;
+    }
+
+    this.moving = true;
+
+    try {
+      this.sound.pause();
+      this.sound.currentTime = 0;
+
+      await gsap.to(this.image.scale, {
+        x: this.initialScale,
+        y: this.initialScale,
+        duration: this.config.returnDuration,
+        ease: this.config.returnEase,
+      });
+
+      this.escaped = false;
     } finally {
       this.moving = false;
     }

@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, Text } from "pixi.js";
+import { Container, Sprite, Text } from "pixi.js";
 import { gsap } from "gsap";
 import type { GameConfig } from "../config";
 import AssetLoader from "../core/AssetLoader";
@@ -9,14 +9,18 @@ import { shuffle } from "../utils/shuffle";
 import { delay } from "../utils/delay";
 
 type GameState =
-  "loading" | "ready" | "animating" | "resetting" | "won" | "error";
+  | "loading"
+  | "ready"
+  | "animating"
+  | "resetting"
+  | "won"
+  | "error";
 
 export default class Game extends Container {
   readonly designWidth: number;
   readonly designHeight: number;
 
   private readonly loader = new AssetLoader();
-  private readonly fadeOverlay = new Graphics();
   private readonly backgroundMusic: HTMLAudioElement;
   private readonly openingAnimations = new Set<Promise<void>>();
 
@@ -58,7 +62,9 @@ export default class Game extends Container {
     const scene = this.config.scene;
 
     // Background.
-    const background = new Sprite(this.loader.getTexture("background"));
+    const background = new Sprite(
+      this.loader.getTexture("background"),
+    );
 
     const backgroundScale = Math.max(
       this.designWidth / background.texture.width,
@@ -67,7 +73,10 @@ export default class Game extends Container {
 
     background.anchor.set(0.5);
     background.scale.set(backgroundScale);
-    background.position.set(this.designWidth / 2, this.designHeight / 2);
+    background.position.set(
+      this.designWidth / 2,
+      this.designHeight / 2,
+    );
     background.eventMode = "none";
 
     this.addChild(background);
@@ -88,18 +97,31 @@ export default class Game extends Container {
     this.addChild(this.cage);
 
     // Tiger behind the bars.
-    this.tiger = new Tiger(this.loader.getTexture("tiger"), this.config.tiger);
+    this.tiger = new Tiger(
+      this.loader.getTexture("tiger"),
+      this.config.tiger,
+    );
 
     this.tiger.position.set(scene.tiger.x, scene.tiger.y);
 
-    this.cage.addChildAt(this.tiger, scene.tiger.cagedLayerIndex);
+    this.cage.addChildAt(
+      this.tiger,
+      scene.tiger.cagedLayerIndex,
+    );
 
     // Plate and panel share the same position.
-    const plate = new Sprite(this.loader.getTexture("plate"));
+    const plate = new Sprite(
+      this.loader.getTexture("plate"),
+    );
 
     plate.anchor.set(0.5);
-    plate.scale.set(scene.statusArea.plateWidth / plate.texture.width);
-    plate.position.set(scene.statusArea.x, scene.statusArea.y);
+    plate.scale.set(
+      scene.statusArea.plateWidth / plate.texture.width,
+    );
+    plate.position.set(
+      scene.statusArea.x,
+      scene.statusArea.y,
+    );
     plate.eventMode = "none";
 
     this.addChild(plate);
@@ -109,35 +131,32 @@ export default class Game extends Container {
       this.config.statusPanel,
     );
 
-    this.panel.position.set(scene.statusArea.x, scene.statusArea.y);
+    this.panel.position.set(
+      scene.statusArea.x,
+      scene.statusArea.y,
+    );
     this.panel.scale.set(scene.statusArea.panelScale);
 
     this.addChild(this.panel);
 
     // Victory artwork.
-    this.victoryText = new Sprite(this.loader.getTexture("txt"));
+    this.victoryText = new Sprite(
+      this.loader.getTexture("txt"),
+    );
 
     this.victoryScale =
       this.config.victoryWidth / this.victoryText.texture.width;
 
     this.victoryText.anchor.set(0.5);
     this.victoryText.scale.set(this.victoryScale);
-    this.victoryText.position.set(scene.victory.x, scene.victory.y);
+    this.victoryText.position.set(
+      scene.victory.x,
+      scene.victory.y,
+    );
     this.victoryText.visible = false;
     this.victoryText.eventMode = "none";
 
     this.addChild(this.victoryText);
-
-    // Transition overlay.
-    this.fadeOverlay.beginFill(this.config.fadeColor);
-    this.fadeOverlay.drawRect(0, 0, this.designWidth, this.designHeight);
-    this.fadeOverlay.endFill();
-
-    this.fadeOverlay.alpha = 0;
-    this.fadeOverlay.visible = false;
-    this.fadeOverlay.eventMode = "static";
-
-    this.addChild(this.fadeOverlay);
 
     this.cage.on("selected", (barNumber: number) => {
       void this.handleSelection(barNumber);
@@ -153,10 +172,15 @@ export default class Game extends Container {
         return;
       }
 
-      if (error instanceof DOMException && error.name === "NotAllowedError") {
-        window.addEventListener("pointerdown", this.startBackgroundMusic, {
-          once: true,
-        });
+      if (
+        error instanceof DOMException &&
+        error.name === "NotAllowedError"
+      ) {
+        window.addEventListener(
+          "pointerdown",
+          this.startBackgroundMusic,
+          { once: true },
+        );
 
         return;
       }
@@ -175,7 +199,7 @@ export default class Game extends Container {
     });
   };
 
-  private startAttempt(enableInput = true): void {
+  private startAttempt(): void {
     this.code = shuffle(this.config.cage.barNumbers);
     this.progress = 0;
 
@@ -196,8 +220,8 @@ export default class Game extends Container {
 
     console.log("Generated code:", this.code.join(" "));
 
-    this.state = enableInput ? "ready" : "resetting";
-    this.cage.setInteractive(enableInput);
+    this.state = "ready";
+    this.cage.setInteractive(true);
   }
 
   private async handleSelection(barNumber: number): Promise<void> {
@@ -240,9 +264,11 @@ export default class Game extends Container {
   }
 
   private trackBarOpening(barNumber: number): void {
-    const animation = this.cage.openBar(barNumber).catch((error: unknown) => {
-      this.showError(error);
-    });
+    const animation = this.cage
+      .openBar(barNumber)
+      .catch((error: unknown) => {
+        this.showError(error);
+      });
 
     this.openingAnimations.add(animation);
 
@@ -288,11 +314,18 @@ export default class Game extends Container {
     this.state = "won";
     this.cage.setInteractive(false);
 
-    this.cage.setChildIndex(this.tiger, this.cage.children.length - 1);
+    // Bring the tiger in front of the cage.
+    this.cage.setChildIndex(
+      this.tiger,
+      this.cage.children.length - 1,
+    );
 
     await this.tiger.escape();
 
-    await Promise.all([this.showVictory(), delay(this.config.winDelaySeconds)]);
+    await Promise.all([
+      this.showVictory(),
+      delay(this.config.winDelaySeconds),
+    ]);
 
     await this.restartScene();
   }
@@ -330,7 +363,8 @@ export default class Game extends Container {
 
     await timeline;
 
-    const pulseScale = this.victoryScale * animation.pulseScaleMultiplier;
+    const pulseScale =
+      this.victoryScale * animation.pulseScaleMultiplier;
 
     gsap.to(this.victoryText.scale, {
       x: pulseScale,
@@ -346,27 +380,29 @@ export default class Game extends Container {
     this.state = "resetting";
     this.cage.setInteractive(false);
 
-    this.fadeOverlay.alpha = 0;
-    this.fadeOverlay.visible = true;
+    // Stop the pulse before hiding the victory artwork.
+    gsap.killTweensOf(this.victoryText.scale);
 
-    await gsap.to(this.fadeOverlay, {
-      alpha: 1,
-      duration: this.config.fadeDuration,
-      ease: this.config.fadeEase,
+    await gsap.to(this.victoryText, {
+      alpha: 0,
+      duration: this.config.victoryAnimation.fadeDuration,
+      ease: this.config.victoryAnimation.hideEase,
     });
+
+    this.victoryText.visible = false;
+
+    // Return the tiger while keeping it in front of the cage.
+    await this.tiger.returnToCage();
+
+    // Restore its layer before closing the bars.
+    this.cage.setChildIndex(
+      this.tiger,
+      this.config.scene.tiger.cagedLayerIndex,
+    );
 
     await this.cage.closeAll();
-    this.startAttempt(false);
 
-    await gsap.to(this.fadeOverlay, {
-      alpha: 0,
-      duration: this.config.fadeDuration,
-      ease: this.config.fadeEase,
-    });
-
-    this.fadeOverlay.visible = false;
-    this.state = "ready";
-    this.cage.setInteractive(true);
+    this.startAttempt();
   }
 
   private showError(error: unknown): void {
@@ -378,10 +414,10 @@ export default class Game extends Container {
     this.cage?.setInteractive(false);
     this.backgroundMusic.pause();
 
-    window.removeEventListener("pointerdown", this.startBackgroundMusic);
-
-    gsap.killTweensOf(this.fadeOverlay);
-    this.fadeOverlay.visible = false;
+    window.removeEventListener(
+      "pointerdown",
+      this.startBackgroundMusic,
+    );
 
     if (this.victoryText) {
       gsap.killTweensOf(this.victoryText);
@@ -396,7 +432,10 @@ export default class Game extends Container {
     );
 
     message.anchor.set(0.5);
-    message.position.set(this.designWidth / 2, this.designHeight / 2);
+    message.position.set(
+      this.designWidth / 2,
+      this.designHeight / 2,
+    );
     message.eventMode = "none";
 
     this.addChild(message);

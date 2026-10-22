@@ -24,6 +24,8 @@ export type TigerConfig = {
   escapeDuration: number;
   escapeScale: number;
   escapeEase: string;
+  returnDuration: number;
+  returnEase: string;
 };
 
 export type BarConfig = {
@@ -140,16 +142,13 @@ export type GameConfig = {
   victoryAnimation: {
     initialScaleMultiplier: number;
     fadeDuration: number;
+    hideEase: string;
     scaleDuration: number;
     scaleEase: string;
     pulseScaleMultiplier: number;
     pulseDuration: number;
     pulseEase: string;
   };
-
-  fadeDuration: number;
-  fadeColor: number;
-  fadeEase: string;
 
   errorMessage: {
     text: string;
@@ -194,6 +193,8 @@ export const GAME_CONFIG: GameConfig = {
     escapeDuration: 1.2,
     escapeScale: 1.8,
     escapeEase: "back.out(1.2)",
+    returnDuration: 0.8,
+    returnEase: "power2.inOut",
   },
 
   bar: {
@@ -355,16 +356,13 @@ export const GAME_CONFIG: GameConfig = {
   victoryAnimation: {
     initialScaleMultiplier: 0.5,
     fadeDuration: 0.25,
+    hideEase: "power1.inOut",
     scaleDuration: 0.7,
     scaleEase: "back.out(1.7)",
     pulseScaleMultiplier: 1.04,
     pulseDuration: 0.8,
     pulseEase: "sine.inOut",
   },
-
-  fadeDuration: 0.4,
-  fadeColor: 0x000000,
-  fadeEase: "power1.inOut",
 
   errorMessage: {
     text: "Unable to load or run the game.\nPlease reload the page.",
