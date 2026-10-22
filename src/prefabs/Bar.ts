@@ -1,5 +1,4 @@
 import {
-  Assets,
   Container,
   Filter,
   Graphics,
@@ -35,20 +34,20 @@ export default class Bar extends Container {
 
   constructor(
     barNumber: number,
-    private readonly imageUrl: string,
+    barTexture: Texture,
     direction: BarDirection,
-    private readonly shadowImageUrl: string,
+    shadowTexture: Texture,
   ) {
     super();
 
     this.barNumber = barNumber;
     this.direction = direction;
 
-    this.shadow = Sprite.from(shadowImageUrl);
+    this.shadow = new Sprite(shadowTexture);
     this.shadow.anchor.set(0.5);
     this.shadow.y = SHADOW_OFFSET_Y;
 
-    this.image = Sprite.from(imageUrl);
+    this.image = new Sprite(barTexture);
     this.image.anchor.set(0.5);
 
     this.addSharpenFilter();
@@ -63,11 +62,9 @@ export default class Bar extends Container {
     this.visuals.addChild(this.shadow, this.image);
     this.addChild(this.visuals, this.label);
 
-    // Only the drawn badge receives pointer input.
     this.visuals.eventMode = "none";
     this.label.eventMode = "passive";
     this.label.interactiveChildren = true;
-
     this.badge.cursor = "pointer";
 
     this.badge.on("pointerenter", () => {
@@ -115,30 +112,25 @@ export default class Bar extends Container {
   private createBadge(): void {
     const badge = this.badge;
 
-    // Shadow.
     badge.beginFill(0x071b20, 0.65);
     badge.drawCircle(0, 4, BADGE_RADIUS);
     badge.endFill();
 
-    // Outer border.
     badge.lineStyle(2, 0x071b20);
     badge.beginFill(0xb77a32);
     badge.drawCircle(0, 0, BADGE_RADIUS);
     badge.endFill();
 
-    // Gold rim.
     badge.lineStyle(2, 0xffedac);
     badge.beginFill(0xe9b85b);
     badge.drawCircle(0, -1, BADGE_RADIUS - 3);
     badge.endFill();
 
-    // Dark center.
     badge.lineStyle(2, 0x071b20);
     badge.beginFill(0x12434a);
     badge.drawCircle(0, -1, BADGE_RADIUS - 7);
     badge.endFill();
 
-    // Upper highlight.
     badge.lineStyle(0);
     badge.beginFill(0xffffff, 0.08);
     badge.drawEllipse(0, -10, 14, 6);
@@ -173,19 +165,10 @@ export default class Bar extends Container {
     this.updateInteraction();
 
     try {
-      const [imageTexture, shadowTexture] = await Promise.all([
-        Assets.load<Texture>(this.imageUrl),
-        Assets.load<Texture>(this.shadowImageUrl),
-      ]);
-
-      this.image.texture = imageTexture;
-      this.shadow.texture = shadowTexture;
-
       this.sound.currentTime = 0;
       void this.sound.play().catch(console.warn);
 
       await this.animate(true);
-
       this.opened = true;
     } finally {
       this.animating = false;
@@ -203,7 +186,6 @@ export default class Bar extends Container {
 
     try {
       await this.animate(false);
-
       this.opened = false;
     } finally {
       this.animating = false;
@@ -213,8 +195,7 @@ export default class Bar extends Container {
 
   private async animate(opening: boolean): Promise<void> {
     const direction = this.direction === "left" ? -1 : 1;
-    const distance = this.image.width;
-    const targetX = opening ? direction * distance : 0;
+    const targetX = opening ? direction * this.image.width : 0;
 
     await gsap.to([this.visuals, this.label], {
       x: targetX,
@@ -265,7 +246,6 @@ export default class Bar extends Container {
     );
 
     sharpen.resolution = window.devicePixelRatio || 1;
-
     this.image.filters = [sharpen];
   }
 }

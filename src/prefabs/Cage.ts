@@ -27,7 +27,6 @@ export default class Cage extends Container {
     image.anchor.set(0.5);
     image.eventMode = "none";
 
-    // Set the image size after its texture is available.
     const fitImage = () => {
       const scale = CAGE_WIDTH / image.texture.width;
       image.scale.set(scale);
@@ -47,9 +46,9 @@ export default class Cage extends Container {
 
       const bar = new Bar(
         index + 1,
-        barImageUrl,
+        barTexture,
         isLeft ? "left" : "right",
-        shadowImageUrl,
+        shadowTexture,
       );
 
       bar.position.set(
@@ -60,6 +59,7 @@ export default class Cage extends Container {
       bar.on("selected", (barNumber: number) => {
         this.emit("selected", barNumber);
       });
+
       bar.scale.set(1.08);
       this.bars.push(bar);
       this.addChild(bar);
