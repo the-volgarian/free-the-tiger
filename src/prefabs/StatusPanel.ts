@@ -1,70 +1,68 @@
 import { Container, Text, TextStyle } from "pixi.js";
-
-const TOTAL_BARS = 6;
+import type { StatusPanelConfig } from "../config";
 
 export default class StatusPanel extends Container {
   private readonly countText: Text;
-  private remaining = TOTAL_BARS;
+  private remaining: number;
 
-  constructor() {
+  constructor(
+    private readonly totalBars: number,
+    config: StatusPanelConfig,
+  ) {
     super();
 
-    const textStyle = new TextStyle({
-      fontFamily: ["Arial Black", "Arial", "sans-serif"],
-      fontSize: 38,
-      fontWeight: "bold",
-      align: "center",
-      fill: 0xfff4cf,
+    this.remaining = totalBars;
 
-      stroke: 0x071b20,
-      strokeThickness: 6,
-      lineJoin: "round",
+    const title = new Text(
+      config.title.text,
+      new TextStyle({
+        ...config.baseStyle,
+        ...config.title.style,
+      }),
+    );
 
-      dropShadow: true,
-      dropShadowColor: 0x003c46,
-      dropShadowAlpha: 0.7,
-      dropShadowAngle: Math.PI / 2,
-      dropShadowDistance: 6,
-      dropShadowBlur: 0,
-    });
-
-    const titleStyle = textStyle.clone();
-    titleStyle.fontSize = 55;
-
-    const title = new Text("FREE THE\nTIGER", titleStyle);
     title.anchor.set(0.5);
-    title.position.set(0, -175);
+    title.y = config.title.y;
 
-    const countStyle = textStyle.clone();
-    countStyle.fontSize = 240;
-    countStyle.fill = [0xffed60, 0xffb526];
-    countStyle.strokeThickness = 8;
-    countStyle.dropShadowDistance = 9;
+    this.countText = new Text(
+      String(this.remaining),
+      new TextStyle({
+        ...config.baseStyle,
+        ...config.count.style,
+      }),
+    );
 
-    this.countText = new Text(String(this.remaining), countStyle);
     this.countText.anchor.set(0.5);
-    this.countText.position.set(0, 0);
+    this.countText.y = config.count.y;
 
-    const caption = new Text("BARS LEFT", textStyle);
+    const caption = new Text(
+      config.caption.text,
+      new TextStyle({
+        ...config.baseStyle,
+        ...config.caption.style,
+      }),
+    );
+
     caption.anchor.set(0.5);
-    caption.position.set(0, 145);
+    caption.y = config.caption.y;
 
-    const instructionStyle = textStyle.clone();
-    instructionStyle.fontSize = 26;
-    instructionStyle.strokeThickness = 4;
-    instructionStyle.dropShadowDistance = 4;
-
-    const instruction = new Text("Find the\nright order", instructionStyle);
+    const instruction = new Text(
+      config.instruction.text,
+      new TextStyle({
+        ...config.baseStyle,
+        ...config.instruction.style,
+      }),
+    );
 
     instruction.anchor.set(0.5);
-    instruction.position.set(0, 205);
+    instruction.y = config.instruction.y;
 
     this.addChild(title, this.countText, caption, instruction);
     this.eventMode = "none";
   }
 
   setRemaining(count: number): void {
-    this.remaining = Math.max(0, Math.min(TOTAL_BARS, count));
+    this.remaining = Math.max(0, Math.min(this.totalBars, count));
     this.countText.text = String(this.remaining);
   }
 
@@ -73,6 +71,6 @@ export default class StatusPanel extends Container {
   }
 
   reset(): void {
-    this.setRemaining(TOTAL_BARS);
+    this.setRemaining(this.totalBars);
   }
 }

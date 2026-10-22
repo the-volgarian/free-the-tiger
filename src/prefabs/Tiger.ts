@@ -1,8 +1,6 @@
 import { Container, Sprite, Texture } from "pixi.js";
 import { gsap } from "gsap";
-
-const ESCAPE_DURATION = 1.2;
-const ESCAPE_SCALE = 1.8;
+import type { TigerConfig } from "../config";
 
 export default class Tiger extends Container {
   private readonly image: Sprite;
@@ -12,15 +10,16 @@ export default class Tiger extends Container {
   private moving = false;
   private escaped = false;
 
-  constructor(texture: Texture, displayWidth: number) {
+  constructor(
+    texture: Texture,
+    private readonly config: TigerConfig,
+  ) {
     super();
 
     this.image = new Sprite(texture);
-
-    // Keep the bottom center fixed while growing.
     this.image.anchor.set(0.5, 1);
 
-    this.initialScale = displayWidth / texture.width;
+    this.initialScale = config.displayWidth / texture.width;
     this.image.scale.set(this.initialScale);
 
     this.addChild(this.image);
@@ -38,13 +37,13 @@ export default class Tiger extends Container {
       this.sound.currentTime = 0;
       void this.sound.play().catch(console.warn);
 
-      const targetScale = this.initialScale * ESCAPE_SCALE;
+      const targetScale = this.initialScale * this.config.escapeScale;
 
       await gsap.to(this.image.scale, {
         x: targetScale,
         y: targetScale,
-        duration: ESCAPE_DURATION,
-        ease: "back.out(1.2)",
+        duration: this.config.escapeDuration,
+        ease: this.config.escapeEase,
       });
 
       this.escaped = true;

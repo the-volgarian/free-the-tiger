@@ -1,5 +1,6 @@
 import { Application } from "pixi.js";
 import Game from "../scenes/Game";
+import { GAME_CONFIG } from "../config";
 
 export default class App extends Application {
   private readonly game: Game;
@@ -16,10 +17,10 @@ export default class App extends Application {
       resizeTo: window,
       autoDensity: true,
       resolution: window.devicePixelRatio || 1,
-      backgroundColor: 0x18252b,
+      backgroundColor: GAME_CONFIG.backgroundColor,
     });
 
-    this.game = new Game();
+    this.game = new Game(GAME_CONFIG);
     this.stage.addChild(this.game);
 
     this.renderer.on("resize", this.resizeScene);
