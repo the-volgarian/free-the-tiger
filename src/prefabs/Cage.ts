@@ -3,7 +3,9 @@ import Bar from "./Bar";
 
 const TOTAL_BARS = 6;
 const BARS_PER_SIDE = 3;
+
 const CAGE_WIDTH = 760;
+const BAR_WIDTH_RATIO = 0.34;
 
 type CageLayout = {
   leftX: number;
@@ -23,10 +25,12 @@ export default class Cage extends Container {
   ) {
     super();
 
+    // Create cage
     const image = new Sprite(cageTexture);
     image.anchor.set(0.5);
     image.eventMode = "none";
 
+    // Scale cage while preserving aspect ratio
     const fitImage = () => {
       const scale = CAGE_WIDTH / image.texture.width;
       image.scale.set(scale);
@@ -40,6 +44,11 @@ export default class Cage extends Container {
 
     this.addChild(image);
 
+    // Calculate bar dimensions relative to cage width
+    const barWidth = CAGE_WIDTH * BAR_WIDTH_RATIO;
+    const barScale = barWidth / barTexture.width;
+
+    // Create bars
     for (let index = 0; index < TOTAL_BARS; index++) {
       const isLeft = index < BARS_PER_SIDE;
       const row = index % BARS_PER_SIDE;
@@ -51,16 +60,20 @@ export default class Cage extends Container {
         shadowTexture,
       );
 
+      // Position bar
       bar.position.set(
         isLeft ? layout.leftX : layout.rightX,
         layout.firstY + row * layout.rowSpacing,
       );
 
+      // Scale only the bar image and shadow
+      bar.setBarScale(barScale);
+
+      // Forward selection event
       bar.on("selected", (barNumber: number) => {
         this.emit("selected", barNumber);
       });
 
-      bar.scale.set(1.08);
       this.bars.push(bar);
       this.addChild(bar);
     }

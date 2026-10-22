@@ -41,13 +41,16 @@ export default class Bar extends Container {
     this.barNumber = barNumber;
     this.direction = direction;
 
+    // Create shadow
     this.shadow = new Sprite(shadowTexture);
     this.shadow.anchor.set(0.5);
     this.shadow.y = SHADOW_OFFSET_Y;
 
+    // Create bar image
     this.image = new Sprite(barTexture);
     this.image.anchor.set(0.5);
 
+    // Flip right-side bars
     if (direction === "right") {
       this.image.scale.x = -1;
       this.shadow.scale.x = -1;
@@ -55,6 +58,7 @@ export default class Bar extends Container {
 
     this.createBadge();
 
+    // Separate bar visuals from the number badge
     this.visuals.addChild(this.shadow, this.image);
     this.addChild(this.visuals, this.label);
 
@@ -63,6 +67,7 @@ export default class Bar extends Container {
     this.label.interactiveChildren = true;
     this.badge.cursor = "pointer";
 
+    // Badge hover
     this.badge.on("pointerenter", () => {
       if (this.canInteract) {
         this.label.scale.set(HOVER_SCALE);
@@ -73,6 +78,7 @@ export default class Bar extends Container {
       this.label.scale.set(1);
     });
 
+    // Badge selection
     this.badge.on("pointertap", () => {
       if (this.canInteract) {
         this.emit("selected", this.barNumber);
@@ -93,6 +99,11 @@ export default class Bar extends Container {
   setInteractive(enabled: boolean): void {
     this.inputEnabled = enabled;
     this.updateInteraction();
+  }
+
+  // Scale only the bar and shadow, not the badge
+  setBarScale(scale: number): void {
+    this.visuals.scale.set(scale);
   }
 
   private updateInteraction(): void {
@@ -191,7 +202,11 @@ export default class Bar extends Container {
 
   private async animate(opening: boolean): Promise<void> {
     const direction = this.direction === "left" ? -1 : 1;
-    const targetX = opening ? direction * this.image.width : 0;
+
+    // Account for the visual scale when calculating movement
+    const targetX = opening
+      ? direction * this.image.width * this.visuals.scale.x
+      : 0;
 
     await gsap.to([this.visuals, this.label], {
       x: targetX,
