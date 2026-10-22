@@ -1,6 +1,5 @@
 import {
   Container,
-  Filter,
   Graphics,
   Sprite,
   Text,
@@ -14,7 +13,6 @@ const SHADOW_OFFSET_Y = 8;
 const HOVER_SCALE = 1.2;
 const OPEN_DURATION = 0.5;
 const CLOSE_DURATION = 0.2;
-const SHARPEN_STRENGTH = 0.4;
 const BADGE_RADIUS = 27;
 
 export default class Bar extends Container {
@@ -49,8 +47,6 @@ export default class Bar extends Container {
 
     this.image = new Sprite(barTexture);
     this.image.anchor.set(0.5);
-
-    this.addSharpenFilter();
 
     if (direction === "right") {
       this.image.scale.x = -1;
@@ -202,50 +198,5 @@ export default class Bar extends Container {
       duration: opening ? OPEN_DURATION : CLOSE_DURATION,
       ease: opening ? "power2.inOut" : "power2.in",
     });
-  }
-
-  private addSharpenFilter(): void {
-    const sharpen = new Filter(
-      undefined,
-      `
-        varying vec2 vTextureCoord;
-
-        uniform sampler2D uSampler;
-        uniform vec4 inputPixel;
-        uniform vec4 inputClamp;
-        uniform float strength;
-
-        vec4 sampleColor(vec2 position) {
-          return texture2D(
-            uSampler,
-            clamp(position, inputClamp.xy, inputClamp.zw)
-          );
-        }
-
-        void main() {
-          vec2 pixel = inputPixel.zw;
-          vec4 center = sampleColor(vTextureCoord);
-
-          vec3 neighbours =
-            sampleColor(vTextureCoord + vec2(pixel.x, 0.0)).rgb +
-            sampleColor(vTextureCoord - vec2(pixel.x, 0.0)).rgb +
-            sampleColor(vTextureCoord + vec2(0.0, pixel.y)).rgb +
-            sampleColor(vTextureCoord - vec2(0.0, pixel.y)).rgb;
-
-          vec3 color =
-            center.rgb * (1.0 + 4.0 * strength) -
-            neighbours * strength;
-
-          gl_FragColor = vec4(
-            clamp(color, vec3(0.0), vec3(center.a)),
-            center.a
-          );
-        }
-      `,
-      { strength: SHARPEN_STRENGTH },
-    );
-
-    sharpen.resolution = window.devicePixelRatio || 1;
-    this.image.filters = [sharpen];
   }
 }
