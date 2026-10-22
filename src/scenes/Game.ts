@@ -22,8 +22,8 @@ export default class Game extends Container {
 
   private readonly loader = new AssetLoader();
   private readonly fadeOverlay = new Graphics();
-
   private readonly backgroundMusic = new Audio("/sounds/background.mp3");
+  private readonly openingAnimations = new Set<Promise<void>>();
 
   private cage!: Cage;
   private tiger!: Tiger;
@@ -34,6 +34,10 @@ export default class Game extends Container {
   private state: GameState = "loading";
   private code: number[] = [];
   private progress = 0;
+
+  private hasGameError(): boolean {
+    return this.state === "error";
+  }
 
   async load(): Promise<void> {
     try {
@@ -56,7 +60,6 @@ export default class Game extends Container {
   }
 
   private createScene(): void {
-    // Background.
     const background = new Sprite(this.loader.getTexture("background"));
 
     const backgroundScale = Math.max(
@@ -66,13 +69,11 @@ export default class Game extends Container {
 
     background.anchor.set(0.5);
     background.scale.set(backgroundScale);
-
     background.position.set(this.designWidth / 2, this.designHeight / 2);
-
     background.eventMode = "none";
+
     this.addChild(background);
 
-    // Cage and locking bars.
     this.cage = new Cage(
       this.loader.getTexture("cage"),
       this.loader.getTexture("bar"),
@@ -84,21 +85,18 @@ export default class Game extends Container {
         rowSpacing: 100,
       },
     );
+
     this.cage.position.set(980, 560);
     this.cage.scale.set(1.35);
     this.cage.setInteractive(false);
 
     this.addChild(this.cage);
 
-    // Tiger behind the locking bars.
     this.tiger = new Tiger(this.loader.getTexture("tiger"), 440);
-
     this.tiger.position.set(0, 210);
     this.cage.addChildAt(this.tiger, 1);
 
-    // Plate.
     const plate = new Sprite(this.loader.getTexture("plate"));
-
     const plateWidth = 480;
 
     plate.anchor.set(0.5);
@@ -108,16 +106,13 @@ export default class Game extends Container {
 
     this.addChild(plate);
 
-    // Status panel.
     this.panel = new StatusPanel();
     this.panel.position.set(270, 530);
     this.panel.scale.set(0.8);
 
     this.addChild(this.panel);
 
-    // Victory artwork.
     this.victoryText = new Sprite(this.loader.getTexture("txt"));
-
     this.victoryScale = VICTORY_WIDTH / this.victoryText.texture.width;
 
     this.victoryText.anchor.set(0.5);
@@ -128,11 +123,8 @@ export default class Game extends Container {
 
     this.addChild(this.victoryText);
 
-    // Transition overlay above the scene.
     this.fadeOverlay.beginFill(0x000000);
-
     this.fadeOverlay.drawRect(0, 0, this.designWidth, this.designHeight);
-
     this.fadeOverlay.endFill();
     this.fadeOverlay.alpha = 0;
     this.fadeOverlay.visible = false;
@@ -149,7 +141,6 @@ export default class Game extends Container {
     this.backgroundMusic.loop = true;
     this.backgroundMusic.volume = MUSIC_VOLUME;
 
-    // Try autoplay and fall back to the first user interaction.
     void this.backgroundMusic.play().catch((error: unknown) => {
       if (this.state === "error") {
         return;
@@ -159,7 +150,6 @@ export default class Game extends Container {
         window.addEventListener("pointerdown", this.startBackgroundMusic, {
           once: true,
         });
-
         return;
       }
 
@@ -187,7 +177,6 @@ export default class Game extends Container {
     this.victoryText.alpha = 1;
     this.victoryText.scale.set(this.victoryScale);
 
-    // Restore the tiger behind the bars.
     this.cage.setChildIndex(this.tiger, 1);
 
     console.log("Generated code:", this.code.join(" "));
@@ -201,9 +190,6 @@ export default class Game extends Container {
       return;
     }
 
-    this.state = "animating";
-    this.cage.setInteractive(false);
-
     try {
       const expectedNumber = this.code[this.progress];
 
@@ -212,16 +198,26 @@ export default class Game extends Container {
         return;
       }
 
-      await this.cage.openBar(barNumber);
-
+      // Record the correct choice immediately.
       this.progress++;
       this.panel.setRemaining(TOTAL_BARS - this.progress);
+      this.trackBarOpening(barNumber);
 
       if (this.progress === this.code.length) {
+        this.state = "animating";
+        this.cage.setInteractive(false);
+
+        await this.waitForOpeningAnimations();
+
+        if (this.hasGameError()) {
+          return;
+        }
+
         await this.win();
         return;
       }
 
+      // Keep the other bars interactive while this one is sliding.
       this.state = "ready";
       this.cage.setInteractive(true);
     } catch (error) {
@@ -229,12 +225,35 @@ export default class Game extends Container {
     }
   }
 
+  private trackBarOpening(barNumber: number): void {
+    const animation = this.cage.openBar(barNumber).catch((error: unknown) => {
+      this.showError(error);
+    });
+
+    this.openingAnimations.add(animation);
+
+    void animation.then(() => {
+      this.openingAnimations.delete(animation);
+    });
+  }
+
+  private async waitForOpeningAnimations(): Promise<void> {
+    while (this.openingAnimations.size > 0) {
+      await Promise.all([...this.openingAnimations]);
+    }
+  }
+
   private async resetAttempt(): Promise<void> {
     this.state = "resetting";
     this.cage.setInteractive(false);
 
-    await this.cage.closeAll();
+    await this.waitForOpeningAnimations();
 
+    if (this.hasGameError()) {
+      return;
+    }
+
+    await this.cage.closeAll();
     this.startAttempt();
   }
 
@@ -242,7 +261,6 @@ export default class Game extends Container {
     this.state = "won";
     this.cage.setInteractive(false);
 
-    // Bring the tiger in front of all cage elements.
     this.cage.setChildIndex(this.tiger, this.cage.children.length - 1);
 
     await this.tiger.escape();
@@ -281,7 +299,6 @@ export default class Game extends Container {
 
     await timeline;
 
-    // Gently pulse until the next attempt.
     gsap.to(this.victoryText.scale, {
       x: this.victoryScale * 1.04,
       y: this.victoryScale * 1.04,
@@ -299,19 +316,15 @@ export default class Game extends Container {
     this.fadeOverlay.alpha = 0;
     this.fadeOverlay.visible = true;
 
-    // Fade to black.
     await gsap.to(this.fadeOverlay, {
       alpha: 1,
       duration: FADE_DURATION,
       ease: "power1.inOut",
     });
 
-    // Restore everything while the scene is covered.
     await this.cage.closeAll();
-
     this.startAttempt(false);
 
-    // Reveal the restored scene.
     await gsap.to(this.fadeOverlay, {
       alpha: 0,
       duration: FADE_DURATION,
@@ -319,7 +332,6 @@ export default class Game extends Container {
     });
 
     this.fadeOverlay.visible = false;
-
     this.state = "ready";
     this.cage.setInteractive(true);
   }
@@ -327,7 +339,6 @@ export default class Game extends Container {
   private showError(error: unknown): void {
     this.state = "error";
     this.cage?.setInteractive(false);
-
     this.backgroundMusic.pause();
 
     window.removeEventListener("pointerdown", this.startBackgroundMusic);
@@ -355,9 +366,7 @@ export default class Game extends Container {
     );
 
     message.anchor.set(0.5);
-
     message.position.set(this.designWidth / 2, this.designHeight / 2);
-
     message.eventMode = "none";
 
     this.addChild(message);
